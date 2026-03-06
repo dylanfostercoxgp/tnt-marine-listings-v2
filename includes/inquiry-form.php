@@ -55,7 +55,8 @@ function tnt_marine_process_inquiry() {
 
     $listing_title = get_the_title( $listing_id );
     $listing_url   = get_permalink( $listing_id );
-    $to_email      = 'dylan@coxgp.com';
+    $email_cfg     = tnt_marine_get_email_settings();
+    $to_email      = $email_cfg['to_email'] ?: get_option( 'admin_email' );
 
     // Listing meta
     $price  = get_post_meta( $listing_id, '_tnt_price',    true );
@@ -87,7 +88,8 @@ function tnt_marine_process_inquiry() {
     $hours_fmt  = $hours  ?: '&mdash;';
     $power_fmt  = $power_raw ? $power_raw . 'hp' : '&mdash;';
 
-    $subject = 'New Inquiry: ' . $listing_title;
+    $subject_prefix = trim( $email_cfg['email_subject'] ) ?: 'New Inquiry:';
+    $subject        = $subject_prefix . ' ' . $listing_title;
 
     ob_start();
     ?>
@@ -242,11 +244,21 @@ function tnt_marine_process_inquiry() {
     <?php
     $html_body = ob_get_clean();
 
+    $from_name  = $email_cfg['from_name']  ?: 'TNT Custom Marine';
+    $from_email = $email_cfg['from_email'] ?: 'inquiry@tntcustommarine.com';
     $headers = [
         'Content-Type: text/html; charset=UTF-8',
-        'From: TNT Custom Marine <inquiry@tntcustommarine.com>',
-        'Reply-To: noreply@tntcustommarine.com',
+        'From: ' . $from_name . ' <' . $from_email . '>',
     ];
+    if ( ! empty( $email_cfg['reply_to'] ) ) {
+        $headers[] = 'Reply-To: ' . $email_cfg['reply_to'];
+    }
+    if ( ! empty( $email_cfg['cc'] ) ) {
+        $headers[] = 'Cc: ' . $email_cfg['cc'];
+    }
+    if ( ! empty( $email_cfg['bcc'] ) ) {
+        $headers[] = 'Bcc: ' . $email_cfg['bcc'];
+    }
 
     $sent = wp_mail( $to_email, $subject, $html_body, $headers );
 

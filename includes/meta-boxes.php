@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 function tnt_marine_add_meta_boxes() {
     add_meta_box( 'tnt_listing_status',      'Listing Status',         'tnt_meta_status_cb',      'marine_listing', 'side',   'high' );
     add_meta_box( 'tnt_listing_overview',    'Overview',               'tnt_meta_overview_cb',    'marine_listing', 'normal', 'high' );
-    add_meta_box( 'tnt_listing_measurements','Measurements & Weights', 'tnt_meta_measurements_cb','marine_listing', 'normal', 'high' );
+    add_meta_box( 'tnt_listing_measurements','Specifications',         'tnt_meta_measurements_cb','marine_listing', 'normal', 'high' );
     add_meta_box( 'tnt_listing_propulsion',  'Propulsion',             'tnt_meta_propulsion_cb',  'marine_listing', 'normal', 'high' );
     add_meta_box( 'tnt_listing_features',    'Features & Description', 'tnt_meta_features_cb',    'marine_listing', 'normal', 'high' );
     add_meta_box( 'tnt_listing_gallery',     'Photo Gallery',          'tnt_meta_gallery_cb',     'marine_listing', 'normal', 'high' );
@@ -104,12 +104,9 @@ function tnt_meta_propulsion_cb( $post ) {
 function tnt_meta_features_cb( $post ) {
     tnt_nonce( 'tnt_listing_features' );
     $pid = $post->ID;
-    tnt_textarea( $pid, '_tnt_description',      'Description (HTML or plain text)', 8 );
-    tnt_textarea( $pid, '_tnt_power_features',   'Key Features (one per line — highlights buyers will care most about)', 6 );
-    tnt_textarea( $pid, '_tnt_cockpit_features', 'Additional Details (one per line — specs, upgrades, equipment)', 6 );
-    tnt_textarea( $pid, '_tnt_cabin_features',   'Condition & History (one per line — service records, ownership, storage)', 4 );
-    tnt_textarea( $pid, '_tnt_trailer_features', 'Included Items (one per line — trailer, accessories, extras)', 4 );
-    tnt_textarea( $pid, '_tnt_bonus',            'Notes / Disclaimers', 3 );
+    tnt_textarea( $pid, '_tnt_description',    'Description (HTML or plain text)', 8 );
+    tnt_textarea( $pid, '_tnt_power_features', 'Key Features (one per line — highlights buyers will care most about)', 6 );
+    tnt_textarea( $pid, '_tnt_bonus',          'Notes / Disclaimers', 3 );
 }
 
 /* ------------------------------------------------------------------ gallery */

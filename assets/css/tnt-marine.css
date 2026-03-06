@@ -650,12 +650,12 @@
     display: flex;
     flex-direction: column;
     gap: 5px;
-    flex: 1;
+    flex: 1 1 0;
     min-width: 0;
 }
 
 .tnt-filter-group--single {
-    flex: 0 0 130px;
+    flex: 1 1 0;
 }
 
 .tnt-filter-group label {
@@ -715,7 +715,7 @@
 
 .tnt-btn-filter-apply {
     background: #cc2129;
-    color: #ffffff;
+    color: #ffffff !important;
     border: none;
     border-radius: var(--tnt-radius);
     padding: 0 20px;
