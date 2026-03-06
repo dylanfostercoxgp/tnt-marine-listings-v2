@@ -173,7 +173,7 @@ while ( have_posts() ) : the_post();
             if ( $dry_weight ) $meas_html .= '<h4>Weights</h4><table class="tnt-spec-table"><tr><td>Dry Weight</td><td>' . esc_html( $dry_weight ) . ' Lb</td></tr></table>';
             if ( $fuel_tanks ) $meas_html .= '<h4>Tanks</h4><table class="tnt-spec-table"><tr><td>Fuel Tanks</td><td>' . esc_html( $fuel_tanks ) . ' gal</td></tr></table>';
             $meas_html .= '</div></div>';
-            tnt_accordion_section( 'meas', 'Measurements & Weights', $meas_html );
+            tnt_accordion_section( 'meas', 'Specifications', $meas_html );
         }
 
         // Propulsion

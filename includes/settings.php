@@ -8,6 +8,15 @@ if ( ! defined( 'ABSPATH' ) ) exit;
    is stored in a single option and used by the inquiry form.
    ========================================================================= */
 
+// ── Plugin action links (adds "Settings" link on the Plugins screen) ──────
+
+function tnt_marine_plugin_action_links( $links ) {
+    $settings_link = '<a href="' . admin_url( 'options-general.php?page=tnt-marine-settings' ) . '">Settings</a>';
+    array_unshift( $links, $settings_link );
+    return $links;
+}
+add_filter( 'plugin_action_links_tnt-marine-listings-v2/tnt-marine-listings.php', 'tnt_marine_plugin_action_links' );
+
 // ── Register settings ──────────────────────────────────────────────────────
 
 function tnt_marine_register_settings() {
