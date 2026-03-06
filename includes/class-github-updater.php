@@ -3,25 +3,23 @@
  * TNT Marine Listings – GitHub Auto-Updater
  *
  * Hooks into WordPress's native plugin-update system to check GitHub
- * Releases for a newer version and enables one-click updates from the
+ * tags for a newer version and enables one-click updates from the
  * WordPress Plugins admin screen — no third-party plugins required.
  *
  * How it works:
  *   1. On every WordPress update check, the class calls the GitHub
- *      Releases API to find the latest release tag.
+ *      Tags API to find the latest version tag.
  *   2. If the tag version is higher than the installed version, WordPress
  *      shows "Update Available" in the Plugins list.
- *   3. Clicking "Update Now" downloads the release zip from GitHub and
+ *   3. Clicking "Update Now" downloads the archive zip from GitHub and
  *      installs it exactly like a WordPress.org update.
  *
- * Updating the plugin (for developers):
+ * Updating the plugin:
+ *   - Make changes to the plugin code.
  *   - Bump the version in tnt-marine-listings.php + TNT_MARINE_VERSION.
- *   - Push the updated code to GitHub.
- *   - Create a GitHub Release tagged  v{new-version}  (e.g. v1.0.8).
- *   - Attach the plugin zip as a release asset named
- *     tnt-marine-listings-v2.zip  (optional but recommended – avoids the
- *     folder-rename step).
- *   - WordPress sites will detect the update on the next check.
+ *   - Push to GitHub and create a new tag  v{new-version}  (e.g. v1.0.8).
+ *   - WordPress sites will detect the update on the next check (~12 hrs)
+ *     or immediately after clicking "Check Again" in the Plugins screen.
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
@@ -43,8 +41,8 @@ class TNT_GitHub_Updater {
     /** Cached plugin header data */
     private ?array $plugin_data = null;
 
-    /** Cached GitHub API response */
-    private ?object $github_release = null;
+    /** Cached latest version string (e.g. "1.0.8") */
+    private ?string $latest_version = null;
 
     // ------------------------------------------------------------------ //
     //  Boot                                                                //
@@ -82,18 +80,17 @@ class TNT_GitHub_Updater {
     }
 
     /**
-     * Fetch (and cache) the latest GitHub release object.
-     * Returns false on error.
-     *
-     * @return object|false
+     * Fetch the latest version string from the GitHub Tags API.
+     * Tags should follow the format  v1.0.7  or  1.0.7.
+     * Returns null on error or if no tags exist.
      */
-    private function get_latest_release() {
-        if ( $this->github_release ) {
-            return $this->github_release;
+    private function get_latest_version(): ?string {
+        if ( $this->latest_version !== null ) {
+            return $this->latest_version;
         }
 
-        $api_url  = sprintf(
-            'https://api.github.com/repos/%s/%s/releases/latest',
+        $api_url = sprintf(
+            'https://api.github.com/repos/%s/%s/tags',
             $this->github_user,
             $this->github_repo
         );
@@ -107,35 +104,42 @@ class TNT_GitHub_Updater {
         ] );
 
         if ( is_wp_error( $response ) ) {
-            return false;
+            return null;
         }
         if ( 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
-            return false;
+            return null;
         }
 
-        $body = json_decode( wp_remote_retrieve_body( $response ) );
-        if ( empty( $body->tag_name ) ) {
-            return false;
+        $tags = json_decode( wp_remote_retrieve_body( $response ), true );
+        if ( empty( $tags ) || ! is_array( $tags ) ) {
+            return null;
         }
 
-        $this->github_release = $body;
-        return $this->github_release;
+        // Tags are returned newest-first. Pick the first semver-looking tag.
+        foreach ( $tags as $tag ) {
+            $name = ltrim( $tag['name'] ?? '', 'v' );
+            if ( preg_match( '/^\d+\.\d+(\.\d+)?$/', $name ) ) {
+                $this->latest_version = $name;
+                return $name;
+            }
+        }
+
+        return null;
     }
 
     /**
-     * Return the best download URL for the release.
-     * Prefers a .zip attached as a release asset; falls back to GitHub's
-     * auto-generated zipball.
+     * Build the GitHub archive download URL for a given version.
+     * GitHub always provides a zip archive for any tag — no release needed.
+     *
+     * @param string $version  e.g. "1.0.8"
      */
-    private function get_download_url( object $release ): string {
-        if ( ! empty( $release->assets ) ) {
-            foreach ( $release->assets as $asset ) {
-                if ( str_ends_with( strtolower( $asset->name ), '.zip' ) ) {
-                    return $asset->browser_download_url;
-                }
-            }
-        }
-        return $release->zipball_url;
+    private function download_url( string $version ): string {
+        return sprintf(
+            'https://github.com/%s/%s/archive/refs/tags/v%s.zip',
+            $this->github_user,
+            $this->github_repo,
+            $version
+        );
     }
 
     // ------------------------------------------------------------------ //
@@ -154,26 +158,25 @@ class TNT_GitHub_Updater {
             return $transient;
         }
 
-        $release = $this->get_latest_release();
-        if ( ! $release ) {
+        $latest_version = $this->get_latest_version();
+        if ( ! $latest_version ) {
             return $transient;
         }
 
-        $data           = $this->get_plugin_data();
-        $latest_version = ltrim( $release->tag_name, 'v' );
+        $data = $this->get_plugin_data();
 
         if ( version_compare( $latest_version, $data['Version'], '>' ) ) {
             $transient->response[ $this->slug ] = (object) [
-                'id'          => "github.com/{$this->github_user}/{$this->github_repo}",
-                'slug'        => dirname( $this->slug ),
-                'plugin'      => $this->slug,
-                'new_version' => $latest_version,
-                'url'         => $data['PluginURI'],
-                'package'     => $this->get_download_url( $release ),
-                'icons'       => [],
-                'banners'     => [],
-                'tested'      => '',
-                'requires_php'=> '',
+                'id'           => "github.com/{$this->github_user}/{$this->github_repo}",
+                'slug'         => dirname( $this->slug ),
+                'plugin'       => $this->slug,
+                'new_version'  => $latest_version,
+                'url'          => $data['PluginURI'],
+                'package'      => $this->download_url( $latest_version ),
+                'icons'        => [],
+                'banners'      => [],
+                'tested'       => '',
+                'requires_php' => '',
                 'compatibility'=> new stdClass(),
             ];
         }
@@ -184,8 +187,7 @@ class TNT_GitHub_Updater {
     /**
      * Hook: plugins_api
      *
-     * Populates the "View version details" lightbox in the Plugins screen
-     * with release information pulled from GitHub.
+     * Populates the "View version details" lightbox in the Plugins screen.
      *
      * @param false|object|array $result
      * @param string             $action
@@ -200,8 +202,8 @@ class TNT_GitHub_Updater {
             return $result;
         }
 
-        $release = $this->get_latest_release();
-        if ( ! $release ) {
+        $latest_version = $this->get_latest_version();
+        if ( ! $latest_version ) {
             return $result;
         }
 
@@ -210,36 +212,31 @@ class TNT_GitHub_Updater {
         return (object) [
             'name'          => $data['Name'],
             'slug'          => dirname( $this->slug ),
-            'version'       => ltrim( $release->tag_name, 'v' ),
+            'version'       => $latest_version,
             'author'        => '<a href="' . esc_url( $data['AuthorURI'] ) . '">'
                                . esc_html( $data['Author'] ) . '</a>',
             'homepage'      => $data['PluginURI'],
             'requires'      => '5.8',
             'tested'        => '6.7',
-            'last_updated'  => ! empty( $release->published_at )
-                               ? date( 'Y-m-d', strtotime( $release->published_at ) )
-                               : '',
             'sections'      => [
                 'description' => '<p>' . esc_html( $data['Description'] ) . '</p>',
-                'changelog'   => ! empty( $release->body )
-                                 ? '<pre>' . esc_html( $release->body ) . '</pre>'
-                                 : '<p>See <a href="https://github.com/'
-                                   . esc_attr( $this->github_user ) . '/'
-                                   . esc_attr( $this->github_repo )
-                                   . '/releases" target="_blank">GitHub Releases</a> for changelog.</p>',
+                'changelog'   => '<p>See <a href="https://github.com/'
+                                 . esc_attr( $this->github_user ) . '/'
+                                 . esc_attr( $this->github_repo )
+                                 . '/tags" target="_blank">GitHub Tags</a> for version history.</p>',
             ],
-            'download_link' => $this->get_download_url( $release ),
+            'download_link' => $this->download_url( $latest_version ),
         ];
     }
 
     /**
      * Hook: upgrader_source_selection
      *
-     * GitHub's zipball extracts to a randomly-named folder such as
-     * "dylanfostercoxgp-tnt-marine-listings-v2-abc1234/".
-     * WordPress expects the folder to keep the same name as the plugin
-     * directory ("tnt-marine-listings-v2/").
-     * This hook renames the extracted folder before WP moves it into place.
+     * GitHub's archive zip extracts to a folder like
+     * "tnt-marine-listings-v2-1.0.7/".
+     * WordPress expects the folder to match the installed plugin directory
+     * name ("tnt-marine-listings-v2/").
+     * This hook renames the folder before WP moves it into place.
      *
      * @param string      $source        Path to extracted source.
      * @param string      $remote_source Path to temp dir.
@@ -249,27 +246,24 @@ class TNT_GitHub_Updater {
     public function fix_extracted_folder(
         string $source,
         string $remote_source,
-        /* WP_Upgrader */ $upgrader,
-        array $hook_extra
+               $upgrader,
+        array  $hook_extra
     ): string {
-        // Only act on updates to this specific plugin.
         if ( empty( $hook_extra['plugin'] ) || $hook_extra['plugin'] !== $this->slug ) {
             return $source;
         }
 
         global $wp_filesystem;
 
-        $expected_folder = trailingslashit( $remote_source ) . dirname( $this->slug ) . '/';
+        $expected = trailingslashit( $remote_source ) . dirname( $this->slug ) . '/';
 
-        // Nothing to do if the folder is already correctly named.
-        if ( trailingslashit( $source ) === $expected_folder ) {
+        if ( trailingslashit( $source ) === $expected ) {
             return $source;
         }
 
-        // Rename the extracted folder to the expected plugin directory name.
         if ( $wp_filesystem && $wp_filesystem->exists( $source ) ) {
-            if ( $wp_filesystem->move( $source, $expected_folder, true ) ) {
-                return $expected_folder;
+            if ( $wp_filesystem->move( $source, $expected, true ) ) {
+                return $expected;
             }
         }
 
