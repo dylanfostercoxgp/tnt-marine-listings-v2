@@ -1,18 +1,18 @@
 <?php
 /**
  * Plugin Name: TNT Marine Listings
- * Plugin URI:  https://tntcustommarine.com/
+ * Plugin URI:  https://ideaboss.io/
  * Description: Marine vessel listings with gallery, specs, sorting, and inquiry forms.
- * Version:     1.0.7
- * Author:      Cox Group
- * Author URI:  https://tntcustommarine.com/
+ * Version:     1.0.8
+ * Author:      ideaBoss
+ * Author URI:  https://ideaboss.io/
  * License:     GPL-2.0+
  * Text Domain: tnt-marine
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'TNT_MARINE_VERSION', '1.0.7' );
+define( 'TNT_MARINE_VERSION', '1.0.8' );
 define( 'TNT_MARINE_PATH',    plugin_dir_path( __FILE__ ) );
 define( 'TNT_MARINE_URL',     plugin_dir_url( __FILE__ ) );
 
