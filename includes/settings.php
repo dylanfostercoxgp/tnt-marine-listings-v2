@@ -240,8 +240,10 @@ function tnt_marine_settings_page_html() {
             </h2>
             <p style="color:#666;margin-bottom:4px;">
                 Connect a Google Drive folder to automatically create and update boat listings.
-                Each subfolder in your Drive folder represents one listing and should contain
-                a <strong>Google Sheet</strong> (data) and any <strong>image files</strong>.
+                Place one <strong>master Google Sheet</strong> in the root of your shared folder
+                (one row per listing), then create a <strong>subfolder per listing</strong>
+                — named exactly after the Title in that row — and drop the boat's
+                <strong>images</strong> inside it.
             </p>
             <p style="color:#666;margin-bottom:20px;">
                 Need help setting this up? Download the
