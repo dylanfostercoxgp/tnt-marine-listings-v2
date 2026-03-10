@@ -55,9 +55,15 @@ function tnt_marine_sanitize_drive_settings( $input ): array {
     $old_interval = get_option( 'tnt_marine_drive_settings', [] )['sync_interval'] ?? 'hourly';
     $new_interval = sanitize_text_field( $input['sync_interval'] ?? 'hourly' );
 
+    // Accept either a bare folder ID or a full Drive URL; extract just the ID.
+    $raw_folder = sanitize_text_field( $input['drive_folder_id'] ?? '' );
+    if ( preg_match( '#/folders/([a-zA-Z0-9_-]+)#', $raw_folder, $m ) ) {
+        $raw_folder = $m[1];
+    }
+
     $sanitized = [
         'service_account_json' => wp_unslash( $input['service_account_json'] ?? '' ), // JSON – do not strip
-        'drive_folder_id'      => sanitize_text_field( $input['drive_folder_id'] ?? '' ),
+        'drive_folder_id'      => $raw_folder,
         'sync_interval'        => $new_interval,
     ];
 

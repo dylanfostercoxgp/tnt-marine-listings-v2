@@ -145,10 +145,21 @@ class TNT_Drive_Sync {
 		$cached = get_transient( 'tnt_drive_access_token' );
 		if ( $cached ) return $cached;
 
-		$creds = json_decode( $this->settings['service_account_json'] ?? '', true );
+		// Extra stripslashes() guards against WP double-escaping the JSON on save.
+		$raw_json = stripslashes( $this->settings['service_account_json'] ?? '' );
+		$creds    = json_decode( $raw_json, true );
 		if ( empty( $creds['private_key'] ) || empty( $creds['client_email'] ) ) {
 			$this->log( 'ERROR: Service account JSON is missing private_key or client_email.' );
 			return false;
+		}
+
+		// Google's downloaded JSON uses literal \n in the private_key string.
+		// json_decode() should convert those to real newlines, but if WordPress
+		// doubled the backslashes during save/retrieve they stay as two chars.
+		// Normalise: if no real newline is present, replace the literal sequence.
+		$private_key = $creds['private_key'];
+		if ( strpos( $private_key, "\n" ) === false ) {
+			$private_key = str_replace( '\\n', "\n", $private_key );
 		}
 
 		$now     = time();
@@ -162,7 +173,7 @@ class TNT_Drive_Sync {
 		] ) );
 
 		$to_sign = $header . '.' . $payload;
-		$key     = openssl_pkey_get_private( $creds['private_key'] );
+		$key     = openssl_pkey_get_private( $private_key );
 		if ( ! $key ) {
 			$this->log( 'ERROR: Could not load private key from service account JSON.' );
 			return false;
