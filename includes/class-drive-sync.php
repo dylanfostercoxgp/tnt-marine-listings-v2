@@ -145,44 +145,60 @@ class TNT_Drive_Sync {
 		$cached = get_transient( 'tnt_drive_access_token' );
 		if ( $cached ) return $cached;
 
-		// Decode the stored JSON. Do NOT run stripslashes() on it first —
-		// that would strip backslashes from the \n sequences in the PEM key.
+		// ── Decode the stored service-account JSON ──────────────────────────
 		$json_stored = $this->settings['service_account_json'] ?? '';
-		$creds       = json_decode( $json_stored, true );
-
-		// Fallback: if decode failed, the value may have been double-slashed on
-		// save by an older version — try again after removing one level of slashes.
-		if ( empty( $creds ) ) {
-			$creds = json_decode( wp_unslash( $json_stored ), true );
-		}
-
-		if ( empty( $creds['private_key'] ) || empty( $creds['client_email'] ) ) {
-			$this->log( 'ERROR: Service account JSON is missing private_key or client_email. Re-save the Drive settings and try again.' );
+		if ( empty( $json_stored ) ) {
+			$this->log( 'ERROR: No service account JSON stored. Please save Drive settings.' );
 			return false;
 		}
 
-		// ── Normalise the PEM private key ───────────────────────────────────
-		// json_decode() converts JSON \n escapes → real newlines (0x0A).
-		// We also guard against every other encoding WordPress might introduce.
+		$creds = json_decode( $json_stored, true );
+		if ( $creds === null ) {
+			// First attempt failed — log the reason then try after un-slashing.
+			$je = json_last_error_msg();
+			$this->log( "WARN: JSON decode failed ({$je}). Retrying with wp_unslash()." );
+			$creds = json_decode( wp_unslash( $json_stored ), true );
+		}
+		if ( $creds === null || ! isset( $creds['private_key'] ) || ! isset( $creds['client_email'] ) ) {
+			$this->log( 'ERROR: Service account JSON is missing private_key or client_email. Re-paste and save the Drive settings.' );
+			return false;
+		}
+
+		// ── Normalise the PEM private key ────────────────────────────────────
 		$private_key = $creds['private_key'];
 
-		// 1. Strip UTF-8 BOM if present (some editors add it to downloaded JSON).
-		$private_key = ltrim( $private_key, "\xEF\xBB\xBF" );
+		// 1. Remove UTF-8 BOM using exact 3-byte match (ltrim() would strip bytes
+		//    individually and corrupt valid key data — use strpos/substr instead).
+		if ( strpos( $private_key, "\xEF\xBB\xBF" ) === 0 ) {
+			$private_key = substr( $private_key, 3 );
+		}
 
-		// 2. Normalise Windows-style line endings → Unix.
+		// 2. Normalise Windows / old-Mac line endings → Unix.
 		$private_key = str_replace( "\r\n", "\n", $private_key );
 		$private_key = str_replace( "\r",   "\n", $private_key );
 
-		// 3. If no real newlines survived, the JSON \n escapes were stored as
-		//    literal two-char sequences (backslash + n).  Convert them now.
-		if ( strpos( $private_key, "\n" ) === false ) {
+		// 3. Replace any remaining literal two-char \n sequences with real newlines.
+		//    This handles mixed states where some \n were decoded and some were not.
+		if ( substr_count( $private_key, '\n' ) > 0 ) {
 			$private_key = str_replace( '\n', "\n", $private_key );
 		}
 
-		// 4. Log key diagnostics so we can see the exact bytes (hex) if it fails.
-		$first_32_hex = bin2hex( substr( $private_key, 0, 32 ) );
-		$newline_count = substr_count( $private_key, "\n" );
+		// 4. Validate PEM structure before calling OpenSSL — gives a precise error
+		//    rather than OpenSSL's cryptic "no start line".
 		$key_len       = strlen( $private_key );
+		$newline_count = substr_count( $private_key, "\n" );
+		$first_32_hex  = bin2hex( substr( $private_key, 0, 32 ) );
+
+		if ( strpos( $private_key, '-----BEGIN PRIVATE KEY-----' ) !== 0 &&
+		     strpos( $private_key, '-----BEGIN RSA PRIVATE KEY-----' ) !== 0 ) {
+			$this->log( "ERROR: PEM header not found. Key length: {$key_len} | Newlines: {$newline_count} | First 32 bytes (hex): {$first_32_hex}" );
+			return false;
+		}
+		$first_newline = strpos( $private_key, "\n" );
+		if ( $first_newline === false ) {
+			$this->log( "ERROR: Private key has no newlines after the header — the PEM is one long line. Key length: {$key_len} | First 32 hex: {$first_32_hex}" );
+			return false;
+		}
 
 		$now     = time();
 		$header  = $this->b64u( json_encode( [ 'alg' => 'RS256', 'typ' => 'JWT' ] ) );
@@ -198,7 +214,7 @@ class TNT_Drive_Sync {
 		$key     = openssl_pkey_get_private( $private_key );
 		if ( ! $key ) {
 			$ssl_err = openssl_error_string() ?: 'no detail';
-			$this->log( "ERROR: OpenSSL rejected private key. Error: {$ssl_err} | Key length: {$key_len} bytes | Newlines in key: {$newline_count} | First 32 bytes (hex): {$first_32_hex}" );
+			$this->log( "ERROR: OpenSSL rejected key. Error: {$ssl_err} | Length: {$key_len} | Newlines: {$newline_count} | First 32 hex: {$first_32_hex}" );
 			return false;
 		}
 		openssl_sign( $to_sign, $sig, $key, OPENSSL_ALGO_SHA256 );
