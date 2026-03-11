@@ -161,16 +161,28 @@ class TNT_Drive_Sync {
 			return false;
 		}
 
-		// Ensure the PEM key has real newlines.
-		// json_decode() converts JSON \n escapes to real newlines automatically,
-		// but guard against edge cases where the stored value has literal \n chars.
+		// ── Normalise the PEM private key ───────────────────────────────────
+		// json_decode() converts JSON \n escapes → real newlines (0x0A).
+		// We also guard against every other encoding WordPress might introduce.
 		$private_key = $creds['private_key'];
-		$private_key = str_replace( "\r\n", "\n", $private_key ); // normalise Windows endings
+
+		// 1. Strip UTF-8 BOM if present (some editors add it to downloaded JSON).
+		$private_key = ltrim( $private_key, "\xEF\xBB\xBF" );
+
+		// 2. Normalise Windows-style line endings → Unix.
+		$private_key = str_replace( "\r\n", "\n", $private_key );
+		$private_key = str_replace( "\r",   "\n", $private_key );
+
+		// 3. If no real newlines survived, the JSON \n escapes were stored as
+		//    literal two-char sequences (backslash + n).  Convert them now.
 		if ( strpos( $private_key, "\n" ) === false ) {
-			// No real newlines found — the JSON \n sequences were not decoded properly.
-			// Replace the two-character literal sequence with an actual newline.
 			$private_key = str_replace( '\n', "\n", $private_key );
 		}
+
+		// 4. Log key diagnostics so we can see the exact bytes (hex) if it fails.
+		$first_32_hex = bin2hex( substr( $private_key, 0, 32 ) );
+		$newline_count = substr_count( $private_key, "\n" );
+		$key_len       = strlen( $private_key );
 
 		$now     = time();
 		$header  = $this->b64u( json_encode( [ 'alg' => 'RS256', 'typ' => 'JWT' ] ) );
@@ -185,10 +197,8 @@ class TNT_Drive_Sync {
 		$to_sign = $header . '.' . $payload;
 		$key     = openssl_pkey_get_private( $private_key );
 		if ( ! $key ) {
-			// Log the OpenSSL error to help diagnose environment-specific issues.
-			$ssl_err = openssl_error_string() ?: 'no additional detail';
-			$key_hdr = substr( trim( $private_key ), 0, 40 );
-			$this->log( "ERROR: Could not load private key – OpenSSL says: {$ssl_err}. Key starts with: {$key_hdr}" );
+			$ssl_err = openssl_error_string() ?: 'no detail';
+			$this->log( "ERROR: OpenSSL rejected private key. Error: {$ssl_err} | Key length: {$key_len} bytes | Newlines in key: {$newline_count} | First 32 bytes (hex): {$first_32_hex}" );
 			return false;
 		}
 		openssl_sign( $to_sign, $sig, $key, OPENSSL_ALGO_SHA256 );

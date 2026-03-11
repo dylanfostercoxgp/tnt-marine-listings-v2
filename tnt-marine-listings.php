@@ -3,7 +3,7 @@
  * Plugin Name: TNT Marine Listings
  * Plugin URI:  https://ideaboss.io/
  * Description: Marine vessel listings with gallery, specs, sorting, and inquiry forms.
- * Version:     1.2.3
+ * Version:     1.2.4
  * Author:      ideaBoss
  * Author URI:  https://ideaboss.io/
  * License:     GPL-2.0+
@@ -12,7 +12,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'TNT_MARINE_VERSION', '1.2.3' );
+define( 'TNT_MARINE_VERSION', '1.2.4' );
 define( 'TNT_MARINE_PATH',    plugin_dir_path( __FILE__ ) );
 define( 'TNT_MARINE_URL',     plugin_dir_url( __FILE__ ) );
 

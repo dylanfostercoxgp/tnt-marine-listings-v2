@@ -345,7 +345,8 @@ function tnt_marine_settings_page_html() {
                 echo '<div style="background:#1d2327;color:#b4bbc8;font-family:monospace;font-size:12px;padding:14px 16px;border-radius:4px;max-height:260px;overflow-y:auto;">';
                 foreach ( $logs as $line ) {
                     $color = strpos( $line, 'ERROR' ) !== false ? '#ff7070' : '#b4bbc8';
-                    echo '<div style="color:' . esc_attr( $color ) . ';padding:1px 0;">' . esc_html( $line ) . '</div>';
+                    // Use nl2br so any embedded newlines (e.g. from key diagnostics) render visibly.
+                    echo '<div style="color:' . esc_attr( $color ) . ';padding:1px 0;word-break:break-all;">' . nl2br( esc_html( $line ) ) . '</div>';
                 }
                 echo '</div>';
                 echo '<p style="margin-top:8px;"><a href="' . esc_url( add_query_arg( 'tnt_clear_log', '1' ) ) . '">Clear log</a></p>';
