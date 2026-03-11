@@ -3,7 +3,7 @@
  * Plugin Name: TNT Marine Listings
  * Plugin URI:  https://ideaboss.io/
  * Description: Marine vessel listings with gallery, specs, sorting, and inquiry forms.
- * Version:     1.2.6
+ * Version:     1.1.1
  * Author:      ideaBoss
  * Author URI:  https://ideaboss.io/
  * License:     GPL-2.0+
@@ -12,7 +12,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'TNT_MARINE_VERSION', '1.2.5' );
+define( 'TNT_MARINE_VERSION', '1.1.1' );
 define( 'TNT_MARINE_PATH',    plugin_dir_path( __FILE__ ) );
 define( 'TNT_MARINE_URL',     plugin_dir_url( __FILE__ ) );
 
@@ -28,13 +28,6 @@ if ( is_admin() ) {
     require_once TNT_MARINE_PATH . 'includes/class-github-updater.php';
     new TNT_GitHub_Updater( __FILE__ );
 }
-
-// Google Drive auto-sync – watches a Drive folder and auto-posts boat listings.
-require_once TNT_MARINE_PATH . 'includes/class-drive-sync.php';
-new TNT_Drive_Sync();
-
-// Clear the Drive sync cron on deactivation.
-register_deactivation_hook( __FILE__, [ 'TNT_Drive_Sync', 'clear_cron' ] );
 
 function tnt_marine_enqueue_assets() {
     wp_enqueue_style(
