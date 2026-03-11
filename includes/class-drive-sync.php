@@ -145,21 +145,31 @@ class TNT_Drive_Sync {
 		$cached = get_transient( 'tnt_drive_access_token' );
 		if ( $cached ) return $cached;
 
-		// Extra stripslashes() guards against WP double-escaping the JSON on save.
-		$raw_json = stripslashes( $this->settings['service_account_json'] ?? '' );
-		$creds    = json_decode( $raw_json, true );
+		// Decode the stored JSON. Do NOT run stripslashes() on it first —
+		// that would strip backslashes from the \n sequences in the PEM key.
+		$json_stored = $this->settings['service_account_json'] ?? '';
+		$creds       = json_decode( $json_stored, true );
+
+		// Fallback: if decode failed, the value may have been double-slashed on
+		// save by an older version — try again after removing one level of slashes.
+		if ( empty( $creds ) ) {
+			$creds = json_decode( wp_unslash( $json_stored ), true );
+		}
+
 		if ( empty( $creds['private_key'] ) || empty( $creds['client_email'] ) ) {
-			$this->log( 'ERROR: Service account JSON is missing private_key or client_email.' );
+			$this->log( 'ERROR: Service account JSON is missing private_key or client_email. Re-save the Drive settings and try again.' );
 			return false;
 		}
 
-		// Google's downloaded JSON uses literal \n in the private_key string.
-		// json_decode() should convert those to real newlines, but if WordPress
-		// doubled the backslashes during save/retrieve they stay as two chars.
-		// Normalise: if no real newline is present, replace the literal sequence.
+		// Ensure the PEM key has real newlines.
+		// json_decode() converts JSON \n escapes to real newlines automatically,
+		// but guard against edge cases where the stored value has literal \n chars.
 		$private_key = $creds['private_key'];
+		$private_key = str_replace( "\r\n", "\n", $private_key ); // normalise Windows endings
 		if ( strpos( $private_key, "\n" ) === false ) {
-			$private_key = str_replace( '\\n', "\n", $private_key );
+			// No real newlines found — the JSON \n sequences were not decoded properly.
+			// Replace the two-character literal sequence with an actual newline.
+			$private_key = str_replace( '\n', "\n", $private_key );
 		}
 
 		$now     = time();
@@ -175,7 +185,10 @@ class TNT_Drive_Sync {
 		$to_sign = $header . '.' . $payload;
 		$key     = openssl_pkey_get_private( $private_key );
 		if ( ! $key ) {
-			$this->log( 'ERROR: Could not load private key from service account JSON.' );
+			// Log the OpenSSL error to help diagnose environment-specific issues.
+			$ssl_err = openssl_error_string() ?: 'no additional detail';
+			$key_hdr = substr( trim( $private_key ), 0, 40 );
+			$this->log( "ERROR: Could not load private key – OpenSSL says: {$ssl_err}. Key starts with: {$key_hdr}" );
 			return false;
 		}
 		openssl_sign( $to_sign, $sig, $key, OPENSSL_ALGO_SHA256 );
