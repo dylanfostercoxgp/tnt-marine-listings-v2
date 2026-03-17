@@ -33,6 +33,7 @@ add_action( 'init', 'tnt_marine_register_post_type' );
 function tnt_marine_activation() {
     tnt_marine_register_post_type();
     flush_rewrite_rules();
+    tnt_marine_create_inquiries_table();
 }
 register_activation_hook( TNT_MARINE_PATH . 'tnt-marine-listings.php', 'tnt_marine_activation' );
 

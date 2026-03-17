@@ -83,6 +83,30 @@
     background-size: cover;
     background-position: center;
     background-color: var(--tnt-light-bg);
+    position: relative;
+    overflow: hidden;
+}
+
+/* SOLD badge overlay on card images */
+.tnt-sold-badge {
+    position: absolute;
+    top: 14px;
+    left: 0;
+    background: #cc2129;
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    padding: 5px 16px 5px 12px;
+    border-radius: 0 4px 4px 0;
+    box-shadow: 2px 2px 8px rgba(0,0,0,0.25);
+    text-transform: uppercase;
+    z-index: 2;
+}
+
+/* Slight desaturate on sold listing cards */
+.tnt-card:has(.tnt-sold-badge) .tnt-card-image {
+    filter: grayscale(20%);
 }
 
 .tnt-card-body {
@@ -494,6 +518,49 @@
     font-size: 0.95rem;
     line-height: 1.7;
     color: var(--tnt-text);
+}
+
+/* Video & Hi-Res Photo Links */
+.tnt-media-links {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.tnt-media-link-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #fff;
+    color: #1a2e4a;
+    text-decoration: none;
+    font-size: 0.92rem;
+    font-weight: 600;
+    padding: 13px 18px;
+    border-radius: var(--tnt-radius);
+    border: 2px solid var(--tnt-border);
+    transition: border-color 0.2s, background 0.2s, color 0.2s;
+    letter-spacing: 0.01em;
+}
+
+.tnt-media-link-btn::after {
+    content: '→';
+    margin-left: auto;
+    font-size: 1rem;
+    color: var(--tnt-muted);
+    transition: color 0.2s, transform 0.2s;
+}
+
+.tnt-media-link-btn:hover {
+    border-color: #1a2e4a;
+    background: #1a2e4a;
+    color: #fff;
+    text-decoration: none;
+}
+
+.tnt-media-link-btn:hover::after {
+    color: #fff;
+    transform: translateX(3px);
 }
 
 .tnt-bonus-text {

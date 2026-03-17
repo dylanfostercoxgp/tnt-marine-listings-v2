@@ -2,10 +2,16 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 function tnt_marine_inquiry_form( $listing_id, $listing_title ) {
+    $settings = tnt_marine_get_settings();
+    $heading  = $settings['form_heading']      ?: 'Inquire About This Vessel';
+    $btn_text = $settings['form_button_text']  ?: 'Send Inquiry';
+    $def_msg  = $settings['form_default_message'] ?: 'I am interested in this vessel and would like more information.';
+    $ph_required = ! empty( $settings['form_phone_required'] );
+
     ob_start();
     ?>
     <div class="tnt-inquiry-wrap" id="tnt-inquiry">
-        <h3>Inquire About This Vessel</h3>
+        <h3><?php echo esc_html( $heading ); ?></h3>
         <div id="tnt-inquiry-message" class="tnt-inquiry-notice" style="display:none;"></div>
         <div class="tnt-inquiry-form">
             <div class="tnt-form-row">
@@ -20,8 +26,8 @@ function tnt_marine_inquiry_form( $listing_id, $listing_title ) {
             </div>
             <div class="tnt-form-row">
                 <div class="tnt-form-group">
-                    <label for="tnt_phone">Phone Number</label>
-                    <input type="tel" id="tnt_phone" placeholder="(555) 000-0000">
+                    <label for="tnt_phone">Phone Number<?php echo $ph_required ? ' <span>*</span>' : ''; ?></label>
+                    <input type="tel" id="tnt_phone" placeholder="(555) 000-0000"<?php echo $ph_required ? ' required' : ''; ?>>
                 </div>
                 <div class="tnt-form-group">
                     <label for="tnt_subject">Subject</label>
@@ -33,7 +39,7 @@ function tnt_marine_inquiry_form( $listing_id, $listing_title ) {
                 <textarea id="tnt_message" rows="5" placeholder="I am interested in this vessel and would like more information..."><?php echo esc_textarea( 'I am interested in the ' . $listing_title . ' and would like more information.' ); ?></textarea>
             </div>
             <input type="hidden" id="tnt_listing_id" value="<?php echo intval( $listing_id ); ?>">
-            <button type="button" id="tnt-inquiry-submit" class="tnt-btn-primary">Send Inquiry</button>
+            <button type="button" id="tnt-inquiry-submit" class="tnt-btn-primary"><?php echo esc_html( $btn_text ); ?></button>
         </div>
     </div>
     <?php
@@ -49,6 +55,13 @@ function tnt_marine_process_inquiry() {
     $message    = sanitize_textarea_field( wp_unslash( $_POST['message'] ?? '' ) );
     $listing_id = intval( $_POST['listing_id'] ?? 0 );
 
+    $settings = tnt_marine_get_settings();
+
+    // Phone required?
+    if ( ! empty( $settings['form_phone_required'] ) && ! $phone ) {
+        wp_send_json_error( [ 'message' => 'Please provide your phone number.' ] );
+    }
+
     if ( ! $name || ! $email || ! $message || ! is_email( $email ) ) {
         wp_send_json_error( [ 'message' => 'Please fill in all required fields with valid information.' ] );
     }
@@ -59,19 +72,22 @@ function tnt_marine_process_inquiry() {
     $to_email      = $email_cfg['to_email'] ?: get_option( 'admin_email' );
 
     // Listing meta
-    $price  = get_post_meta( $listing_id, '_tnt_price',    true );
-    $year   = get_post_meta( $listing_id, '_tnt_year',     true );
-    $length = get_post_meta( $listing_id, '_tnt_length',   true );
-    $hours  = get_post_meta( $listing_id, '_tnt_hours',    true );
-    $power_raw = 0;
+    $price    = get_post_meta( $listing_id, '_tnt_price',    true );
+    $year     = get_post_meta( $listing_id, '_tnt_year',     true );
+    $length   = get_post_meta( $listing_id, '_tnt_length',   true );
+    $hours    = get_post_meta( $listing_id, '_tnt_hours',    true );
+    $make     = get_post_meta( $listing_id, '_tnt_make',     true );
+    $model    = get_post_meta( $listing_id, '_tnt_model',    true );
+    $location = get_post_meta( $listing_id, '_tnt_location', true );
+
+    $power_raw    = 0;
     $engine_count = intval( get_post_meta( $listing_id, '_tnt_engine_count', true ) ) ?: 1;
     for ( $e = 1; $e <= $engine_count; $e++ ) {
         $power_raw += intval( get_post_meta( $listing_id, '_tnt_engine_power_' . $e, true ) );
     }
-    $location = get_post_meta( $listing_id, '_tnt_location', true );
 
-    // Featured image URL
-    $featured_id  = (int) get_post_thumbnail_id( $listing_id );
+    // Featured image
+    $featured_id = (int) get_post_thumbnail_id( $listing_id );
     if ( ! $featured_id ) {
         $gallery_raw = get_post_meta( $listing_id, '_tnt_gallery_ids', true );
         if ( $gallery_raw ) {
@@ -81,16 +97,17 @@ function tnt_marine_process_inquiry() {
     }
     $featured_url = $featured_id ? wp_get_attachment_image_url( $featured_id, 'large' ) : '';
 
-    // Format display values
-    $price_fmt  = $price  ? '$' . number_format( floatval( $price ) ) : '&mdash;';
-    $year_fmt   = $year   ?: '&mdash;';
-    $length_fmt = $length ? $length . 'ft' : '&mdash;';
-    $hours_fmt  = $hours  ?: '&mdash;';
-    $power_fmt  = $power_raw ? $power_raw . 'hp' : '&mdash;';
+    // Formats
+    $price_fmt  = $price      ? '$' . number_format( floatval( $price ) ) : '&mdash;';
+    $year_fmt   = $year       ?: '&mdash;';
+    $length_fmt = $length     ? $length . 'ft' : '&mdash;';
+    $hours_fmt  = $hours      ?: '&mdash;';
+    $power_fmt  = $power_raw  ? $power_raw . 'hp' : '&mdash;';
 
     $subject_prefix = trim( $email_cfg['email_subject'] ) ?: 'New Inquiry:';
     $subject        = $subject_prefix . ' ' . $listing_title;
 
+    // ── Build HTML email ──────────────────────────────────────────────────
     ob_start();
     ?>
 <!DOCTYPE html>
@@ -111,7 +128,6 @@ function tnt_marine_process_inquiry() {
         </tr>
 
         <?php if ( $featured_url ) : ?>
-        <!-- FEATURED IMAGE -->
         <tr>
           <td style="padding:0;line-height:0;">
             <img src="<?php echo esc_url( $featured_url ); ?>" width="600" alt="<?php echo esc_attr( $listing_title ); ?>" style="display:block;width:100%;max-height:220px;object-fit:cover;">
@@ -166,12 +182,10 @@ function tnt_marine_process_inquiry() {
           </td>
         </tr>
 
-        <!-- INQUIRY DETAILS LABEL -->
-        <tr>
-          <td style="padding:24px 32px 8px;">
-            <p style="margin:0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#cc2129;">Inquiry Details</p>
-          </td>
-        </tr>
+        <!-- INQUIRY DETAILS -->
+        <tr><td style="padding:24px 32px 8px;">
+          <p style="margin:0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#cc2129;">Inquiry Details</p>
+        </td></tr>
 
         <!-- CONTACT INFO -->
         <tr>
@@ -221,7 +235,7 @@ function tnt_marine_process_inquiry() {
           </td>
         </tr>
 
-        <!-- CTA BUTTON -->
+        <!-- CTA -->
         <tr>
           <td style="padding:0 32px 32px;text-align:center;">
             <a href="<?php echo esc_url( $listing_url ); ?>" style="display:inline-block;background:#1a2e4a;color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;padding:13px 32px;border-radius:6px;letter-spacing:0.02em;">View Listing on Website</a>
@@ -246,24 +260,38 @@ function tnt_marine_process_inquiry() {
 
     $from_name  = $email_cfg['from_name']  ?: 'TNT Custom Marine';
     $from_email = $email_cfg['from_email'] ?: 'inquiry@tntcustommarine.com';
-    $headers = [
+    $headers    = [
         'Content-Type: text/html; charset=UTF-8',
         'From: ' . $from_name . ' <' . $from_email . '>',
     ];
-    if ( ! empty( $email_cfg['reply_to'] ) ) {
-        $headers[] = 'Reply-To: ' . $email_cfg['reply_to'];
-    }
-    if ( ! empty( $email_cfg['cc'] ) ) {
-        $headers[] = 'Cc: ' . $email_cfg['cc'];
-    }
-    if ( ! empty( $email_cfg['bcc'] ) ) {
-        $headers[] = 'Bcc: ' . $email_cfg['bcc'];
-    }
+    if ( ! empty( $email_cfg['reply_to'] ) ) $headers[] = 'Reply-To: ' . $email_cfg['reply_to'];
+    if ( ! empty( $email_cfg['cc'] ) )       $headers[] = 'Cc: ' . $email_cfg['cc'];
+    if ( ! empty( $email_cfg['bcc'] ) )      $headers[] = 'Bcc: ' . $email_cfg['bcc'];
 
     $sent = wp_mail( $to_email, $subject, $html_body, $headers );
 
+    // ── Save to database if enabled ───────────────────────────────────────
+    if ( ! empty( $settings['save_inquiries_to_db'] ) ) {
+        tnt_marine_save_inquiry( [
+            'name'             => $name,
+            'email'            => $email,
+            'phone'            => $phone,
+            'message'          => $message,
+            'listing_id'       => $listing_id,
+            'listing_title'    => $listing_title,
+            'listing_make'     => $make,
+            'listing_model'    => $model,
+            'listing_year'     => $year,
+            'listing_price'    => $price,
+            'listing_length'   => $length,
+            'listing_location' => $location,
+        ] );
+    }
+
+    $success_msg = $settings['form_success_message'] ?: 'Your inquiry has been sent. We will be in touch shortly.';
+
     if ( $sent ) {
-        wp_send_json_success( [ 'message' => 'Your inquiry has been sent. We will be in touch shortly.' ] );
+        wp_send_json_success( [ 'message' => $success_msg ] );
     } else {
         wp_send_json_error( [ 'message' => 'There was a problem sending your inquiry. Please try again or call us directly.' ] );
     }

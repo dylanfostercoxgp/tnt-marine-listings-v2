@@ -42,6 +42,7 @@ while ( have_posts() ) : the_post();
     $cabin_features   = get_post_meta( $pid, '_tnt_cabin_features',   true );
     $trailer_features = get_post_meta( $pid, '_tnt_trailer_features', true );
     $bonus            = get_post_meta( $pid, '_tnt_bonus',            true );
+    $media_links      = get_post_meta( $pid, '_tnt_media_links',      true );
 
     // Gallery — featured image always first, then additional gallery images (no duplicates)
     $gallery_ids_raw  = get_post_meta( $pid, '_tnt_gallery_ids', true );
@@ -158,6 +159,36 @@ while ( have_posts() ) : the_post();
         // Description
         if ( $description ) {
             tnt_accordion_section( 'desc', 'Description', '<div class="tnt-description-text">' . wp_kses_post( $description ) . '</div>', true );
+        }
+
+        // Video & Hi-Res Photo Links
+        if ( $media_links ) {
+            $lines      = array_filter( array_map( 'trim', explode( "\n", $media_links ) ) );
+            $links_html = '<div class="tnt-media-links">';
+            foreach ( $lines as $line ) {
+                // Support "Label | URL" or plain URL
+                if ( strpos( $line, '|' ) !== false ) {
+                    [ $label, $url ] = array_map( 'trim', explode( '|', $line, 2 ) );
+                } else {
+                    $url   = $line;
+                    // Auto-detect label from URL
+                    if ( stripos( $url, 'youtube' ) !== false || stripos( $url, 'youtu.be' ) !== false ) {
+                        $label = '▶ Watch Video';
+                    } elseif ( stripos( $url, 'vimeo' ) !== false ) {
+                        $label = '▶ Watch Video';
+                    } elseif ( stripos( $url, 'dropbox' ) !== false || stripos( $url, 'drive.google' ) !== false || stripos( $url, 'photos.google' ) !== false ) {
+                        $label = '🖼 View Hi-Res Photos';
+                    } else {
+                        $label = '🔗 View Media';
+                    }
+                }
+                $url         = esc_url( $url );
+                $label_clean = esc_html( $label );
+                if ( ! $url ) continue;
+                $links_html .= '<a href="' . $url . '" target="_blank" rel="noopener noreferrer" class="tnt-media-link-btn">' . $label_clean . '</a>';
+            }
+            $links_html .= '</div>';
+            tnt_accordion_section( 'media', 'Videos &amp; Hi-Res Photos', $links_html );
         }
 
         // Measurements

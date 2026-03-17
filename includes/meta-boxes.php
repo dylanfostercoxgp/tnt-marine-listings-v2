@@ -43,6 +43,7 @@ function tnt_meta_overview_cb( $post ) {
     echo '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 20px;">';
     tnt_input( $pid, '_tnt_price',    'Price ($)',         'number', '699000' );
     tnt_input( $pid, '_tnt_year',     'Year',              'number', '2025' );
+    tnt_input( $pid, '_tnt_make',     'Make / Brand',      'text',   'Sea Ray' );
     tnt_input( $pid, '_tnt_length',   'Length (ft)',       'number', '39' );
     tnt_input( $pid, '_tnt_location', 'Location',          'text',   'Miami, FL' );
     tnt_input( $pid, '_tnt_class',    'Class / Type',      'text',   'Center Console' );
@@ -105,6 +106,13 @@ function tnt_meta_features_cb( $post ) {
     tnt_nonce( 'tnt_listing_features' );
     $pid = $post->ID;
     tnt_textarea( $pid, '_tnt_description',    'Description (HTML or plain text)', 8 );
+
+    // Video & Hi-Res Photo Links
+    $links_val = esc_textarea( get_post_meta( $pid, '_tnt_media_links', true ) );
+    echo '<p><label><strong>Video &amp; Hi-Res Photo Links</strong><br>';
+    echo '<span style="font-size:12px;color:#666;display:block;margin-bottom:6px;">One link per line. Optionally prefix with a label: <em>Walkthrough Video | https://…</em></span>';
+    echo '<textarea name="_tnt_media_links" rows="4" class="widefat" placeholder="Walkthrough Video | https://youtube.com/watch?v=&#10;Hi-Res Photos | https://dropbox.com/sh/…&#10;https://vimeo.com/…">' . $links_val . '</textarea></label></p>';
+
     tnt_textarea( $pid, '_tnt_power_features', 'Key Features (one per line — highlights buyers will care most about)', 6 );
     tnt_textarea( $pid, '_tnt_bonus',          'Notes / Disclaimers', 3 );
 }
@@ -158,11 +166,11 @@ function tnt_marine_save_meta( $post_id ) {
     if ( ! current_user_can( 'edit_post', $post_id ) ) return;
 
     $text_fields = [
-        '_tnt_sold', '_tnt_price', '_tnt_year', '_tnt_length', '_tnt_location',
+        '_tnt_sold', '_tnt_price', '_tnt_year', '_tnt_make', '_tnt_length', '_tnt_location',
         '_tnt_class', '_tnt_capacity', '_tnt_model', '_tnt_hours',
         '_tnt_length_overall', '_tnt_beam', '_tnt_dry_weight', '_tnt_fuel_tanks',
         '_tnt_engine_count',
-        '_tnt_description', '_tnt_power_features', '_tnt_cockpit_features',
+        '_tnt_description', '_tnt_media_links', '_tnt_power_features', '_tnt_cockpit_features',
         '_tnt_cabin_features', '_tnt_trailer_features', '_tnt_bonus',
         '_tnt_gallery_ids',
     ];
