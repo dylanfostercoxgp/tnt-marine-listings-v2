@@ -15,6 +15,7 @@ while ( have_posts() ) : the_post();
     $capacity = get_post_meta( $pid, '_tnt_capacity', true );
     $model    = get_post_meta( $pid, '_tnt_model',    true );
     $hours    = get_post_meta( $pid, '_tnt_hours',    true );
+    $sold     = get_post_meta( $pid, '_tnt_sold',     true );
 
     // Measurements
     $length_overall = get_post_meta( $pid, '_tnt_length_overall', true );
@@ -236,7 +237,13 @@ while ( have_posts() ) : the_post();
     </div>
 
     <!-- INQUIRY FORM -->
-    <?php echo tnt_marine_inquiry_form( $pid, get_the_title() ); ?>
+    <?php
+    $display_settings = tnt_marine_get_settings();
+    $show_form        = ! $sold || ! empty( $display_settings['form_show_on_sold'] );
+    if ( $show_form ) {
+        echo tnt_marine_inquiry_form( $pid, get_the_title() );
+    }
+    ?>
 
     <p class="tnt-back-link"><a href="https://tntcustommarine.com/tnt-marine-listings/">&larr; Back to All Listings</a></p>
 
