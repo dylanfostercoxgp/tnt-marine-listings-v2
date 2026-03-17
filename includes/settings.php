@@ -37,6 +37,11 @@ add_action( 'admin_init', 'tnt_marine_register_settings' );
 // ── Sanitise callbacks ─────────────────────────────────────────────────────
 
 function tnt_marine_sanitize_email_settings( $input ): array {
+    // If this option wasn't part of the submitted form (other tab was saved),
+    // return the existing saved value unchanged to prevent it being wiped.
+    if ( ! is_array( $input ) ) {
+        return (array) get_option( 'tnt_marine_email_settings', [] );
+    }
     return [
         'to_email'      => sanitize_email( $input['to_email']          ?? '' ),
         'from_name'     => sanitize_text_field( $input['from_name']    ?? '' ),
@@ -49,6 +54,11 @@ function tnt_marine_sanitize_email_settings( $input ): array {
 }
 
 function tnt_marine_sanitize_settings( $input ): array {
+    // If this option wasn't part of the submitted form (other tab was saved),
+    // return the existing saved value unchanged to prevent it being wiped.
+    if ( ! is_array( $input ) ) {
+        return (array) get_option( 'tnt_marine_settings', [] );
+    }
     $bool = function( $key ) use ( $input ) {
         return isset( $input[ $key ] ) && $input[ $key ] ? '1' : '';
     };
