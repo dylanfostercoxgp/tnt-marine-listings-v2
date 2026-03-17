@@ -84,6 +84,7 @@ function tnt_marine_sanitize_settings( $input ): array {
         'form_default_message'   => sanitize_textarea_field( $input['form_default_message'] ?? '' ),
         'form_show_on_sold'      => $bool( 'form_show_on_sold' ),
         // Company
+        'dashboard_logo_url'     => esc_url_raw( $input['dashboard_logo_url']      ?? '' ),
         'company_name'           => sanitize_text_field( $input['company_name']    ?? '' ),
         'company_phone'          => sanitize_text_field( $input['company_phone']   ?? '' ),
         'company_email'          => sanitize_email( $input['company_email']        ?? '' ),
@@ -368,7 +369,25 @@ function tnt_marine_settings_page_html() {
             <div style="background:#fff;border:1px solid #ddd;border-top:none;padding:28px 28px 8px;border-radius:0 0 4px 4px;">
                 <p style="color:#666;margin-top:0;">Your dealership information. Used in email footers and can be referenced by your theme.</p>
 
-                <h2 style="border-bottom:2px solid #cc2129;padding-bottom:8px;">Business Information</h2>
+                <h2 style="border-bottom:2px solid #cc2129;padding-bottom:8px;">Inquiry Dashboard</h2>
+                <table class="form-table" role="presentation">
+                    <tr>
+                        <th><label for="tnt_dashboard_logo_url">Dashboard Logo URL</label></th>
+                        <td>
+                            <input type="url" id="tnt_dashboard_logo_url" name="tnt_marine_settings[dashboard_logo_url]"
+                                   value="<?php echo esc_attr( $opts['dashboard_logo_url'] ); ?>" class="large-text"
+                                   placeholder="https://yourdomain.com/wp-content/uploads/your-logo.png">
+                            <p class="description">URL of the logo to display in the top-left of the <code>[marine_inquiries]</code> sales dashboard. Upload your logo via <strong>Media → Add New</strong>, then paste the image URL here.</p>
+                            <?php if ( ! empty( $opts['dashboard_logo_url'] ) ) : ?>
+                                <div style="margin-top:10px;">
+                                    <img src="<?php echo esc_url( $opts['dashboard_logo_url'] ); ?>" alt="Dashboard Logo Preview" style="max-height:60px;border:1px solid #ddd;border-radius:4px;padding:6px;background:#0f172a;">
+                                </div>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                </table>
+
+                <h2 style="border-bottom:2px solid #cc2129;padding-bottom:8px;margin-top:28px;">Business Information</h2>
                 <table class="form-table" role="presentation">
                     <tr>
                         <th><label for="tnt_company_name">Business Name</label></th>
@@ -505,6 +524,7 @@ function tnt_marine_get_settings(): array {
         'form_default_message'   => 'I am interested in this vessel and would like more information.',
         'form_show_on_sold'      => '',
         // Company
+        'dashboard_logo_url' => '',
         'company_name'    => 'TNT Custom Marine',
         'company_phone'   => '',
         'company_email'   => '',
