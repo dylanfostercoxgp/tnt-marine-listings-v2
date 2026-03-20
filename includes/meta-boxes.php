@@ -115,6 +115,12 @@ function tnt_meta_features_cb( $post ) {
 
     tnt_textarea( $pid, '_tnt_power_features', 'Key Features (one per line — highlights buyers will care most about)', 6 );
     tnt_textarea( $pid, '_tnt_bonus',          'Notes / Disclaimers', 3 );
+
+    // SEO Keywords (hidden from visitors – auto-synced from spreadsheet column "Keywords (hidden field)")
+    echo '<p><label><strong>SEO Keywords</strong> <span style="font-weight:400;color:#888;font-size:12px;">(hidden from visitors — used in page &lt;meta&gt; keywords tag)</span><br>';
+    echo '<span style="font-size:12px;color:#666;display:block;margin-bottom:6px;">One keyword phrase per line. Synced automatically from the "Keywords (hidden field)" column in your spreadsheet.</span>';
+    $kw = esc_textarea( get_post_meta( $pid, '_tnt_seo_keywords', true ) );
+    echo '<textarea name="_tnt_seo_keywords" rows="5" class="widefat" placeholder="* high performance boats for sale&#10;* MTI boats for sale&#10;* offshore boats Miami">' . $kw . '</textarea></label></p>';
 }
 
 /* ------------------------------------------------------------------ gallery */
@@ -171,7 +177,7 @@ function tnt_marine_save_meta( $post_id ) {
         '_tnt_length_overall', '_tnt_beam', '_tnt_dry_weight', '_tnt_fuel_tanks',
         '_tnt_engine_count',
         '_tnt_description', '_tnt_media_links', '_tnt_power_features', '_tnt_cockpit_features',
-        '_tnt_cabin_features', '_tnt_trailer_features', '_tnt_bonus',
+        '_tnt_cabin_features', '_tnt_trailer_features', '_tnt_bonus', '_tnt_seo_keywords',
         '_tnt_gallery_ids',
     ];
 
@@ -193,3 +199,20 @@ function tnt_marine_save_meta( $post_id ) {
     }
 }
 add_action( 'save_post_marine_listing', 'tnt_marine_save_meta' );
+
+// ── Output SEO keywords as <meta name="keywords"> on single listing pages ──
+add_action( 'wp_head', function () {
+    if ( ! is_singular( 'marine_listing' ) ) return;
+    $keywords_raw = get_post_meta( get_the_ID(), '_tnt_seo_keywords', true );
+    if ( ! $keywords_raw ) return;
+
+    // Strip "* " bullet-style markers, clean up blank lines, join with commas
+    $lines = array_filter( array_map(
+        fn( $line ) => trim( preg_replace( '/^\*\s*/', '', $line ) ),
+        explode( "\n", $keywords_raw )
+    ) );
+
+    if ( $lines ) {
+        echo '<meta name="keywords" content="' . esc_attr( implode( ', ', $lines ) ) . '">' . "\n";
+    }
+} );

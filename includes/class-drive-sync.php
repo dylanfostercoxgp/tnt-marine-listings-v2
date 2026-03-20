@@ -94,6 +94,19 @@ class TNT_Drive_Sync {
 		'notes'               => '_tnt_bonus',
 		'disclaimers'         => '_tnt_bonus',
 		'notes/disclaimers'   => '_tnt_bonus',
+		// ── SEO / Keywords
+		'keywords (hidden field)' => '_tnt_seo_keywords',
+		'keywords'                => '_tnt_seo_keywords',
+		'seo keywords'            => '_tnt_seo_keywords',
+		// ── Media links (stored in temp keys; combined into _tnt_media_links in parse_row)
+		'video(s)'            => '_tnt_video_links_tmp',
+		'videos'              => '_tnt_video_links_tmp',
+		'video'               => '_tnt_video_links_tmp',
+		'video links'         => '_tnt_video_links_tmp',
+		'hi res photos'       => '_tnt_hires_links_tmp',
+		'hi-res photos'       => '_tnt_hires_links_tmp',
+		'hi res photo links'  => '_tnt_hires_links_tmp',
+		'additional photos'   => '_tnt_hires_links_tmp',
 		// ── Listing status
 		'sold'                => '_tnt_sold',
 	];
@@ -457,7 +470,24 @@ class TNT_Drive_Sync {
 
 		if ( empty( $data['post_title'] ) ) return false;
 
-		// Normalise post_status
+		// ── Combine Video(s) + Hi Res Photos columns into _tnt_media_links ──
+		// The two columns use temp keys to avoid one silently overwriting the other.
+		$media_parts = [];
+		if ( ! empty( $data['_tnt_video_links_tmp'] ) ) {
+			$media_parts[] = 'Videos | ' . trim( $data['_tnt_video_links_tmp'] );
+			unset( $data['_tnt_video_links_tmp'] );
+		}
+		if ( ! empty( $data['_tnt_hires_links_tmp'] ) ) {
+			$media_parts[] = 'Hi-Res Photos | ' . trim( $data['_tnt_hires_links_tmp'] );
+			unset( $data['_tnt_hires_links_tmp'] );
+		}
+		if ( ! empty( $media_parts ) ) {
+			// Append to any existing value already parsed (shouldn't overlap, but safe)
+			$existing = ! empty( $data['_tnt_media_links'] ) ? [ trim( $data['_tnt_media_links'] ) ] : [];
+			$data['_tnt_media_links'] = implode( "\n", array_merge( $existing, $media_parts ) );
+		}
+
+		// ── Normalise post_status ────────────────────────────────────────────
 		$raw                  = strtolower( $data['post_status'] ?? '' );
 		$data['post_status']  = ( $raw === 'draft' ) ? 'draft' : 'publish';
 
@@ -505,6 +535,10 @@ class TNT_Drive_Sync {
 		// Save meta fields
 		foreach ( $data as $meta_key => $value ) {
 			if ( strpos( $meta_key, '_tnt_' ) === 0 ) {
+				// Strip any currency formatting from price before saving
+				if ( $meta_key === '_tnt_price' ) {
+					$value = preg_replace( '/[^0-9.]/', '', (string) $value );
+				}
 				update_post_meta( $post_id, $meta_key, sanitize_textarea_field( $value ) );
 			}
 		}
