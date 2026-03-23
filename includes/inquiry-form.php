@@ -6,7 +6,7 @@ function tnt_marine_inquiry_form( $listing_id, $listing_title ) {
     $heading  = $settings['form_heading']      ?: 'Inquire About This Vessel';
     $btn_text = $settings['form_button_text']  ?: 'Send Inquiry';
     $def_msg  = $settings['form_default_message'] ?: 'I am interested in this vessel and would like more information.';
-    $ph_required = ! empty( $settings['form_phone_required'] );
+    $ph_required = true; // always required – hardcoded to avoid settings-reset side-effect
 
     ob_start();
     ?>
@@ -57,8 +57,8 @@ function tnt_marine_process_inquiry() {
 
     $settings = tnt_marine_get_settings();
 
-    // Phone required?
-    if ( ! empty( $settings['form_phone_required'] ) && ! $phone ) {
+    // Phone is always required
+    if ( ! $phone ) {
         wp_send_json_error( [ 'message' => 'Please provide your phone number.' ] );
     }
 
