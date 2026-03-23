@@ -193,7 +193,7 @@ while ( have_posts() ) : the_post();
                 $links_html .= '<a href="' . $url . '" target="_blank" rel="noopener noreferrer" class="tnt-media-link-btn">' . $label_clean . '</a>';
             }
             $links_html .= '</div>';
-            tnt_accordion_section( 'media', 'Videos &amp; Hi-Res Photos', $links_html );
+            tnt_accordion_section( 'media', 'Click here to view High Res Photos and Videos', $links_html );
         }
 
         // Measurements
