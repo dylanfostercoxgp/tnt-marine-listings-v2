@@ -189,7 +189,15 @@ function tnt_marine_footer_render( $atts = [] ) {
     ?>
 <div class="tnt-site-footer">
 <style>
-.tnt-site-footer{background:<?php echo $bg; ?>;color:<?php echo $tc; ?>;padding:52px 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,sans-serif;font-size:13px;line-height:1.75;}
+.tnt-site-footer{background:<?php echo $bg; ?>;color:<?php echo $tc; ?>;padding:52px 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,sans-serif;font-size:13px;line-height:1.75;
+    /* ── Full-bleed: break out of theme's content wrapper ── */
+    position:relative;left:50%;right:50%;
+    margin-left:-50vw;margin-right:-50vw;
+    width:100vw;max-width:100vw;
+    /* ── Close the gap below: eat the theme's content-area bottom padding ── */
+    margin-bottom:-120px;
+    padding-bottom:0;
+}
 .tnt-site-footer *{box-sizing:border-box;}
 .tnt-footer-inner{max-width:1200px;margin:0 auto;padding:0 40px;display:grid;grid-template-columns:repeat(4,1fr);gap:44px;align-items:start;}
 .tnt-footer-col h4{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.10em;color:#ffffff;margin:0 0 20px;padding-bottom:12px;border-bottom:2px solid <?php echo $accent; ?>;}
@@ -317,6 +325,36 @@ function tnt_marine_footer_render( $atts = [] ) {
     </div>
 
 </div>
+<script>
+/* Dynamically snap the TNT footer flush to the bottom of the content area */
+(function(){
+    var footer = document.querySelector('.tnt-site-footer');
+    if(!footer) return;
+    function snap(){
+        var parent = footer.parentElement;
+        if(!parent) return;
+        var style  = window.getComputedStyle(parent);
+        var pb     = parseFloat(style.paddingBottom) || 0;
+        var mb     = parseFloat(style.marginBottom)  || 0;
+        // Walk up until we hit the element that actually has bottom space
+        var el = parent;
+        var extra = 0;
+        while(el && el !== document.body){
+            var cs = window.getComputedStyle(el);
+            extra += parseFloat(cs.paddingBottom)||0;
+            el = el.parentElement;
+            if(extra > 5) break; // found it
+        }
+        footer.style.marginBottom = '-' + (extra + 2) + 'px';
+    }
+    if(document.readyState === 'loading'){
+        document.addEventListener('DOMContentLoaded', snap);
+    } else {
+        snap();
+    }
+    window.addEventListener('resize', snap);
+})();
+</script>
     <?php
     return ob_get_clean();
 }
