@@ -139,6 +139,7 @@ function tnt_marine_settings_page_html() {
         'form'     => '📋 Inquiry Form',
         'company'  => '🏢 Company & Branding',
         'social'   => '📱 Social Media',
+        'footer'   => '🦶 Footer Widget',
     ];
 
     $tab_url = function( $slug ) {
@@ -477,6 +478,262 @@ function tnt_marine_settings_page_html() {
                     <?php endforeach; ?>
                 </table>
             </div>
+            <!-- ══════════════════════════════════════════ TAB: FOOTER WIDGET -->
+            <?php elseif ( $active_tab === 'footer' ) :
+                $fw = tnt_marine_get_footer_settings();
+                // Build nav menus list for dropdown
+                $nav_menus = wp_get_nav_menus();
+            ?>
+            <div style="background:#fff;border:1px solid #ddd;border-top:none;padding:28px 28px 8px;border-radius:0 0 4px 4px;">
+                <p style="color:#666;margin-top:0;">Configure the 4-column footer that can be placed via the <code>[marine_footer]</code> shortcode, the <strong>⚓ TNT Marine Footer</strong> widget (Appearance → Widgets), or auto-appended to <code>[marine_listings]</code>.</p>
+
+                <!-- ── Enable / Style ── -->
+                <h2 style="border-bottom:2px solid #cc2129;padding-bottom:8px;">Enable &amp; Style</h2>
+                <table class="form-table" role="presentation">
+                    <tr>
+                        <th>Show Footer</th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="tnt_marine_footer_settings[footer_enabled]" value="1"
+                                       <?php checked( $fw['footer_enabled'], '1' ); ?>>
+                                Enable the footer below <code>[marine_listings]</code>
+                            </label>
+                            <p class="description">When checked the footer is automatically rendered after the listings grid. You can also place it anywhere with <code>[marine_footer]</code>.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label for="tnt_footer_bg_color">Background Color</label></th>
+                        <td>
+                            <input type="color" id="tnt_footer_bg_color" name="tnt_marine_footer_settings[footer_bg_color]"
+                                   value="<?php echo esc_attr( $fw['footer_bg_color'] ); ?>">
+                            <span style="margin-left:8px;font-size:12px;color:#666;"><?php echo esc_html( $fw['footer_bg_color'] ); ?></span>
+                            <p class="description">Dark background recommended. Default: <code>#1a1a1a</code></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label for="tnt_footer_text_color">Text Color</label></th>
+                        <td>
+                            <input type="color" id="tnt_footer_text_color" name="tnt_marine_footer_settings[footer_text_color]"
+                                   value="<?php echo esc_attr( $fw['footer_text_color'] ); ?>">
+                            <span style="margin-left:8px;font-size:12px;color:#666;"><?php echo esc_html( $fw['footer_text_color'] ); ?></span>
+                            <p class="description">Body / label text. Default: <code>#cccccc</code></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label for="tnt_footer_accent_color">Accent / Underline Color</label></th>
+                        <td>
+                            <input type="color" id="tnt_footer_accent_color" name="tnt_marine_footer_settings[footer_accent_color]"
+                                   value="<?php echo esc_attr( $fw['footer_accent_color'] ); ?>">
+                            <span style="margin-left:8px;font-size:12px;color:#666;"><?php echo esc_html( $fw['footer_accent_color'] ); ?></span>
+                            <p class="description">Used for heading underlines and hover links. Default: <code>#cc2129</code></p>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- ── Column 1: Contact ── -->
+                <h2 style="border-bottom:2px solid #cc2129;padding-bottom:8px;margin-top:28px;">Column 1 — Contact</h2>
+                <p style="color:#666;margin-top:0;">Values fall back to Company &amp; Branding settings if left blank.</p>
+                <table class="form-table" role="presentation">
+                    <tr>
+                        <th><label for="tnt_col1_heading">Column Heading</label></th>
+                        <td>
+                            <input type="text" id="tnt_col1_heading" name="tnt_marine_footer_settings[col1_heading]"
+                                   value="<?php echo esc_attr( $fw['col1_heading'] ); ?>" class="regular-text" placeholder="Contact Us">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label for="tnt_col1_address_label">Address Label</label></th>
+                        <td>
+                            <input type="text" id="tnt_col1_address_label" name="tnt_marine_footer_settings[col1_address_label]"
+                                   value="<?php echo esc_attr( $fw['col1_address_label'] ); ?>" class="regular-text" placeholder="Address">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label for="tnt_col1_address">Address (Override)</label></th>
+                        <td>
+                            <textarea id="tnt_col1_address" name="tnt_marine_footer_settings[col1_address]"
+                                      class="large-text" rows="3"
+                                      placeholder="Leave blank to use Company &amp; Branding address"><?php echo esc_textarea( $fw['col1_address'] ); ?></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label for="tnt_col1_phone_label">Phone Label</label></th>
+                        <td>
+                            <input type="text" id="tnt_col1_phone_label" name="tnt_marine_footer_settings[col1_phone_label]"
+                                   value="<?php echo esc_attr( $fw['col1_phone_label'] ); ?>" class="regular-text" placeholder="Phone Number">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label for="tnt_col1_phone">Phone (Override)</label></th>
+                        <td>
+                            <input type="tel" id="tnt_col1_phone" name="tnt_marine_footer_settings[col1_phone]"
+                                   value="<?php echo esc_attr( $fw['col1_phone'] ); ?>" class="regular-text" placeholder="Leave blank to use Company &amp; Branding phone">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label for="tnt_col1_email_label">Email Label</label></th>
+                        <td>
+                            <input type="text" id="tnt_col1_email_label" name="tnt_marine_footer_settings[col1_email_label]"
+                                   value="<?php echo esc_attr( $fw['col1_email_label'] ); ?>" class="regular-text" placeholder="Email">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label for="tnt_col1_email">Email (Override)</label></th>
+                        <td>
+                            <input type="email" id="tnt_col1_email" name="tnt_marine_footer_settings[col1_email]"
+                                   value="<?php echo esc_attr( $fw['col1_email'] ); ?>" class="regular-text" placeholder="Leave blank to use Company &amp; Branding email">
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- ── Column 2: Recent News ── -->
+                <h2 style="border-bottom:2px solid #cc2129;padding-bottom:8px;margin-top:28px;">Column 2 — Recent News</h2>
+                <table class="form-table" role="presentation">
+                    <tr>
+                        <th><label for="tnt_col2_heading">Column Heading</label></th>
+                        <td>
+                            <input type="text" id="tnt_col2_heading" name="tnt_marine_footer_settings[col2_heading]"
+                                   value="<?php echo esc_attr( $fw['col2_heading'] ); ?>" class="regular-text" placeholder="Recent News">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label for="tnt_col2_count">Number of Posts</label></th>
+                        <td>
+                            <input type="number" id="tnt_col2_count" name="tnt_marine_footer_settings[col2_count]"
+                                   value="<?php echo intval( $fw['col2_count'] ); ?>" class="small-text" min="1" max="10">
+                            <p class="description">How many recent blog posts to show (1–10). Default: 2.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label for="tnt_col2_category">Category Filter</label></th>
+                        <td>
+                            <input type="text" id="tnt_col2_category" name="tnt_marine_footer_settings[col2_category]"
+                                   value="<?php echo esc_attr( $fw['col2_category'] ); ?>" class="regular-text"
+                                   placeholder="e.g. marine-news">
+                            <p class="description">Enter a category <strong>slug</strong> to filter posts. Leave blank to show all recent posts.</p>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- ── Column 3: Menu ── -->
+                <h2 style="border-bottom:2px solid #cc2129;padding-bottom:8px;margin-top:28px;">Column 3 — Menu</h2>
+                <table class="form-table" role="presentation">
+                    <tr>
+                        <th><label for="tnt_col3_heading">Column Heading</label></th>
+                        <td>
+                            <input type="text" id="tnt_col3_heading" name="tnt_marine_footer_settings[col3_heading]"
+                                   value="<?php echo esc_attr( $fw['col3_heading'] ); ?>" class="regular-text" placeholder="Services">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label for="tnt_col3_menu">Navigation Menu</label></th>
+                        <td>
+                            <select id="tnt_col3_menu" name="tnt_marine_footer_settings[col3_menu]">
+                                <option value="">— Select a menu —</option>
+                                <?php foreach ( $nav_menus as $menu ) : ?>
+                                    <option value="<?php echo esc_attr( $menu->slug ); ?>"
+                                            <?php selected( $fw['col3_menu'], $menu->slug ); ?>>
+                                        <?php echo esc_html( $menu->name ); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <p class="description">Choose any navigation menu created under <strong>Appearance → Menus</strong>.</p>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- ── Column 4: Custom Image ── -->
+                <h2 style="border-bottom:2px solid #cc2129;padding-bottom:8px;margin-top:28px;">Column 4 — Custom Image</h2>
+                <table class="form-table" role="presentation">
+                    <tr>
+                        <th><label for="tnt_col4_heading">Column Heading</label></th>
+                        <td>
+                            <input type="text" id="tnt_col4_heading" name="tnt_marine_footer_settings[col4_heading]"
+                                   value="<?php echo esc_attr( $fw['col4_heading'] ); ?>" class="regular-text" placeholder="Brokerage Boat Sales">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label for="tnt_col4_image_url">Image URL</label></th>
+                        <td>
+                            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                                <input type="url" id="tnt_col4_image_url" name="tnt_marine_footer_settings[col4_image_url]"
+                                       value="<?php echo esc_attr( $fw['col4_image_url'] ); ?>" class="large-text"
+                                       placeholder="https://yourdomain.com/wp-content/uploads/your-image.jpg">
+                                <button type="button" class="button" id="tnt-footer-img-pick">Choose Image</button>
+                            </div>
+                            <?php if ( $fw['col4_image_url'] ) : ?>
+                                <div style="margin-top:10px;">
+                                    <img src="<?php echo esc_url( $fw['col4_image_url'] ); ?>" alt="Footer Image Preview"
+                                         style="max-width:240px;border-radius:6px;border:1px solid #ddd;display:block;">
+                                </div>
+                            <?php endif; ?>
+                            <p class="description">Upload via <strong>Media → Add New</strong>, then paste the URL here, or click "Choose Image" to pick from the media library.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label for="tnt_col4_image_link">Image Link URL</label></th>
+                        <td>
+                            <input type="url" id="tnt_col4_image_link" name="tnt_marine_footer_settings[col4_image_link]"
+                                   value="<?php echo esc_attr( $fw['col4_image_link'] ); ?>" class="large-text"
+                                   placeholder="https://...  (leave blank for no link)">
+                            <p class="description">When visitors click the image, they'll be sent here. Leave blank for a non-clickable image.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label for="tnt_col4_caption">Caption Text</label></th>
+                        <td>
+                            <input type="text" id="tnt_col4_caption" name="tnt_marine_footer_settings[col4_caption]"
+                                   value="<?php echo esc_attr( $fw['col4_caption'] ); ?>" class="large-text"
+                                   placeholder="Optional caption displayed below the image">
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- ── Copyright Bar ── -->
+                <h2 style="border-bottom:2px solid #cc2129;padding-bottom:8px;margin-top:28px;">Copyright Bar</h2>
+                <table class="form-table" role="presentation">
+                    <tr>
+                        <th><label for="tnt_footer_copyright">Copyright Text</label></th>
+                        <td>
+                            <input type="text" id="tnt_footer_copyright" name="tnt_marine_footer_settings[footer_copyright]"
+                                   value="<?php echo esc_attr( $fw['footer_copyright'] ); ?>" class="large-text"
+                                   placeholder="© <?php echo date('Y'); ?> TNT Custom Marine. All rights reserved.">
+                            <p class="description">Displayed on the left of the bottom bar. Leave blank to auto-generate from business name.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label for="tnt_footer_credit_text">Right-side Credit</label></th>
+                        <td>
+                            <input type="text" id="tnt_footer_credit_text" name="tnt_marine_footer_settings[footer_credit_text]"
+                                   value="<?php echo esc_attr( $fw['footer_credit_text'] ); ?>" class="large-text"
+                                   placeholder="Marine Listings powered by Cox Group">
+                            <p class="description">Displayed on the right side of the bottom bar. Leave blank to hide.</p>
+                        </td>
+                    </tr>
+                </table>
+
+            </div>
+
+            <!-- WP Media Picker for footer image -->
+            <script>
+            (function($){
+                $('#tnt-footer-img-pick').on('click', function(e){
+                    e.preventDefault();
+                    var frame = wp.media({
+                        title: 'Choose Footer Image',
+                        button: { text: 'Use this image' },
+                        multiple: false,
+                        library: { type: 'image' }
+                    });
+                    frame.on('select', function(){
+                        var url = frame.state().get('selection').first().toJSON().url;
+                        $('#tnt_col4_image_url').val(url);
+                    });
+                    frame.open();
+                });
+            })(jQuery);
+            </script>
+
             <?php endif; ?>
 
             <?php submit_button( 'Save Settings' ); ?>

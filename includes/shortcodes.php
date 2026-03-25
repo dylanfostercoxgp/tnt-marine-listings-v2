@@ -195,6 +195,9 @@ function tnt_marine_listings_shortcode( $atts ) {
     });
     </script>
     <?php
+    // Append footer if enabled in Footer Widget settings
+    echo tnt_marine_footer_render();
+
     return ob_get_clean();
 }
 add_shortcode( 'marine_listings', 'tnt_marine_listings_shortcode' );

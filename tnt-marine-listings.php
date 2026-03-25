@@ -3,7 +3,7 @@
  * Plugin Name: TNT Marine Listings
  * Plugin URI:  https://ideaboss.io/
  * Description: Marine vessel listings with gallery, specs, sorting, and inquiry forms.
- * Version:     3.0.9
+ * Version:     3.1.0
  * Author:      ideaBoss
  * Author URI:  https://ideaboss.io/
  * License:     GPL-2.0+
@@ -12,7 +12,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'TNT_MARINE_VERSION', '3.0.9' );
+define( 'TNT_MARINE_VERSION', '3.1.0' );
 define( 'TNT_MARINE_PATH',    plugin_dir_path( __FILE__ ) );
 define( 'TNT_MARINE_URL',     plugin_dir_url( __FILE__ ) );
 
@@ -23,6 +23,7 @@ require_once TNT_MARINE_PATH . 'includes/inquiries-db.php';
 require_once TNT_MARINE_PATH . 'includes/shortcodes.php';
 require_once TNT_MARINE_PATH . 'includes/inquiry-form.php';
 require_once TNT_MARINE_PATH . 'includes/inquiries-frontend.php';
+require_once TNT_MARINE_PATH . 'includes/footer-widget.php';
 require_once TNT_MARINE_PATH . 'includes/template-loader.php';
 
 // GitHub auto-updater – enables one-click updates from the WP admin Plugins screen.
@@ -53,6 +54,10 @@ function tnt_marine_enqueue_assets() {
 add_action( 'wp_enqueue_scripts', 'tnt_marine_enqueue_assets' );
 
 function tnt_marine_admin_enqueue_assets( $hook ) {
+    // Enqueue media picker on the TNT Marine settings page (needed for footer image picker)
+    if ( $hook === 'settings_page_tnt-marine-settings' ) {
+        wp_enqueue_media();
+    }
     global $post;
     if ( ( $hook === 'post.php' || $hook === 'post-new.php' ) && isset( $post ) && $post->post_type === 'marine_listing' ) {
         wp_enqueue_media();
